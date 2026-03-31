@@ -3,7 +3,7 @@
 Step 1: Download GIS source data.
 
 Downloads:
-  - NHD high-resolution waterbody shapefiles (HU4 0401 + 0402)
+  - MN NHD statewide waterbody shapefile (from MN Geospatial Commons)
   - USFS Wilderness boundary shapefile
   - Placeholder font (Dancing Script) if no custom font is provided
 
@@ -21,7 +21,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from src.config import (
     FONTS_DIR,
-    NHD_URLS,
+    NHD_URL,
     PLACEHOLDER_FONT_NAME,
     PLACEHOLDER_FONT_URL,
     RAW_DIR,
@@ -60,13 +60,10 @@ def extract_zip(zip_path: Path, dest_dir: Path) -> None:
 def main() -> None:
     RAW_DIR.mkdir(parents=True, exist_ok=True)
 
-    # ── NHD waterbody data ───────────────────────────────────────────────
-    for url in NHD_URLS:
-        fname = url.split("/")[-1]
-        zip_path = RAW_DIR / fname
-        download_file(url, zip_path)
-        extract_dir = RAW_DIR / fname.replace(".zip", "")
-        extract_zip(zip_path, extract_dir)
+    # ── NHD waterbody data (MN statewide) ──────────────────────────────
+    nhd_zip = RAW_DIR / "shp_water_national_hydrography_data.zip"
+    download_file(NHD_URL, nhd_zip)
+    extract_zip(nhd_zip, RAW_DIR / "mn_nhd")
 
     # ── BWCA (Wilderness) boundary ───────────────────────────────────────
     wild_zip = RAW_DIR / "S_USA.Wilderness.zip"

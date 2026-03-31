@@ -14,19 +14,30 @@ logger = logging.getLogger(__name__)
 # ── NHD waterbody loading ────────────────────────────────────────────────────
 
 def _find_nhd_waterbody_shapefiles(raw_dir: Path) -> list[Path]:
-    """Locate NHDWaterbody.shp files inside extracted NHD zip directories."""
-    results = sorted(raw_dir.glob("NHD_H_*/Shape/NHDWaterbody.shp"))
+    """Locate NHD waterbody shapefiles inside extracted zip directories."""
+    # MN Geospatial Commons extract layout
+    results = sorted(raw_dir.glob("**/NHDWaterbody*.shp"))
     if not results:
-        # Try alternate layout (some extracts have a flat structure)
-        results = sorted(raw_dir.glob("**/NHDWaterbody.shp"))
+        # Broader fallback – any shapefile with 'waterbody' in the name
+        results = sorted(raw_dir.glob("**/*aterbody*.shp"))
     return results
+
+
+def _resolve_col(gdf: gpd.GeoDataFrame, candidates: list[str], label: str) -> str:
+    """Return the first column name from *candidates* that exists in *gdf*."""
+    for c in candidates:
+        if c in gdf.columns:
+            return c
+    raise KeyError(f"Could not find {label} column. Tried {candidates}. "
+                   f"Available: {list(gdf.columns)}")
 
 
 def load_nhd_waterbodies(raw_dir: Path) -> gpd.GeoDataFrame:
     shp_files = _find_nhd_waterbody_shapefiles(raw_dir)
     if not shp_files:
         raise FileNotFoundError(
-            f"No NHDWaterbody.shp found under {raw_dir}. Run 01_download_gis_data.py first."
+            f"No NHD waterbody shapefiles found under {raw_dir}. "
+            "Run 01_download_gis_data.py first."
         )
 
     frames = []
@@ -36,17 +47,33 @@ def load_nhd_waterbodies(raw_dir: Path) -> gpd.GeoDataFrame:
         logger.info("Loaded %d waterbodies from %s", len(gdf), shp.name)
 
     combined = gpd.GeoDataFrame(pd.concat(frames, ignore_index=True))
-    combined = combined.drop_duplicates(subset=["GNIS_ID"], keep="first")
+    logger.info("Columns: %s", list(combined.columns))
+
+    # Resolve column names (vary between NHD editions / MN GIS extracts)
+    name_col = _resolve_col(combined, ["GNIS_Name", "GNIS_NA", "gnis_name", "NAME"], "lake name")
+    id_col   = _resolve_col(combined, ["GNIS_ID", "GNIS_Id", "gnis_id", "Permanent_Identifier"], "ID")
+    ftype_col = _resolve_col(combined, ["FType", "FTYPE", "ftype"], "feature type")
+    area_col  = _resolve_col(combined, ["AreaSqKm", "AREASQKM", "areasqkm", "Shape_Area"], "area")
+
+    combined = combined.drop_duplicates(subset=[id_col], keep="first")
 
     # Keep only lakes / ponds (FType 390) and reservoirs (436)
-    lakes = combined[combined["FType"].isin([390, 436])].copy()
+    lakes = combined[combined[ftype_col].isin([390, 436])].copy()
 
     # Named lakes above minimum area
     lakes = lakes[
-        lakes["GNIS_Name"].notna()
-        & (lakes["GNIS_Name"].str.strip() != "")
-        & (lakes["AreaSqKm"] >= MIN_LAKE_AREA_KM2)
+        lakes[name_col].notna()
+        & (lakes[name_col].str.strip() != "")
+        & (lakes[area_col] >= MIN_LAKE_AREA_KM2)
     ].copy()
+
+    # Normalize column names for downstream code
+    lakes = lakes.rename(columns={
+        name_col: "GNIS_Name",
+        id_col: "GNIS_ID",
+        ftype_col: "FType",
+        area_col: "AreaSqKm",
+    })
 
     logger.info("Filtered to %d named lakes >= %.1f acres", len(lakes),
                 MIN_LAKE_AREA_KM2 / 0.00404686)
