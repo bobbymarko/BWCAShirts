@@ -1,0 +1,30 @@
+# GIS data (large files)
+data/raw/
+data/processed/
+
+# Generated outputs
+output/svg/
+output/png/
+output/review/
+output/printful_progress.csv
+
+# Fonts (user-provided)
+fonts/*.ttf
+fonts/*.otf
+
+# Python
+__pycache__/
+*.pyc
+*.egg-info/
+.venv/
+venv/
+
+# Environment
+.env
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Override data (user-generated)
+data/overrides.csv
