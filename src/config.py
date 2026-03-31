@@ -60,4 +60,4 @@ PRINT_DPI = 300
 # ── GIS download URLs ───────────────────────────────────────────────────────
 NHD_URL = "https://resources.gisdata.mn.gov/pub/gdrs/data/pub/us_mn_state_pca/water_national_hydrography_data/shp_water_national_hydrography_data.zip"
 WILDERNESS_URL = "https://data.fs.usda.gov/geodata/edw/edw_resources/shp/S_USA.Wilderness.zip"
-PLACEHOLDER_FONT_URL = "https://github.com/google/fonts/raw/main/ofl/dancingscript/DancingScript-Regular.ttf"
+PLACEHOLDER_FONT_URL = "https://github.com/google/fonts/raw/refs/heads/main/ofl/dancingscript/static/DancingScript-Regular.ttf"

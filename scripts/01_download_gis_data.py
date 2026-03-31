@@ -76,7 +76,13 @@ def main() -> None:
         logger.info("Font already available.")
     except FileNotFoundError:
         font_dest = FONTS_DIR / PLACEHOLDER_FONT_NAME
-        download_file(PLACEHOLDER_FONT_URL, font_dest)
+        try:
+            download_file(PLACEHOLDER_FONT_URL, font_dest)
+        except Exception as e:
+            logger.warning(
+                "Could not download placeholder font (%s). "
+                "Place a .ttf/.otf in fonts/ before running step 3.", e
+            )
 
     logger.info("Step 1 complete.")
 

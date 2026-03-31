@@ -175,9 +175,10 @@ with tab_data:
             m = folium.Map(location=[center_lat, center_lon], zoom_start=9,
                            tiles="CartoDB positron")
 
-            # Add lake polygons
+            # Add lake polygons (keep only serializable columns for Folium)
+            gdf_map = gdf[["GNIS_Name", "AreaSqKm", "geometry"]].to_crs("EPSG:4326")
             folium.GeoJson(
-                gdf.to_crs("EPSG:4326").to_json(),
+                gdf_map.to_json(),
                 style_function=lambda _: {
                     "color": "#3388ff",
                     "weight": 1.5,
