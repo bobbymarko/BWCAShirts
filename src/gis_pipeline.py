@@ -131,26 +131,32 @@ def filter_lakes_in_bwca(
     bwca_lakes = lakes_utm[mask].copy()
     logger.info("Spatial filter: %d lakes intersect BWCA boundary", len(bwca_lakes))
 
-    # De-duplicate by name (keep largest)
-    bwca_lakes = bwca_lakes.sort_values("AreaSqKm", ascending=False)
+    # Disambiguate duplicate names: largest keeps the original name,
+    # smaller instances get _2, _3, … suffixes. All are kept.
+    bwca_lakes = bwca_lakes.sort_values("AreaSqKm", ascending=False).copy()
     edge_cases: list[dict] = []
-    seen: dict[str, float] = {}
-    keep_idx: list = []
+    name_count: dict[str, int] = {}
+    new_names: list[str] = []
 
-    for idx, row in bwca_lakes.iterrows():
+    for _, row in bwca_lakes.iterrows():
         name = row["GNIS_Name"].strip()
-        if name in seen:
+        count = name_count.get(name, 0)
+        if count == 0:
+            new_names.append(name)
+        else:
+            disambig = f"{name} _{count + 1}"
+            new_names.append(disambig)
             edge_cases.append({
-                "lake_name": name,
+                "lake_name": disambig,
+                "original_name": name,
                 "reason": "duplicate_name",
                 "area_sqkm": row["AreaSqKm"],
-                "note": f"Kept larger instance ({seen[name]:.4f} km²)",
+                "note": f"Renamed from '{name}' (smaller instance #{count + 1})",
             })
-        else:
-            seen[name] = row["AreaSqKm"]
-            keep_idx.append(idx)
+        name_count[name] = count + 1
 
-    deduped = bwca_lakes.loc[keep_idx].copy()
+    bwca_lakes["GNIS_Name"] = new_names
+    deduped = bwca_lakes
 
     # Handle overrides (force-include lakes from a user-edited CSV)
     if overrides_path and overrides_path.is_file():
@@ -167,7 +173,9 @@ def filter_lakes_in_bwca(
                 logger.info("Added %d override lakes", len(extras))
 
     edge_df = pd.DataFrame(edge_cases)
-    logger.info("After dedup: %d unique named BWCA lakes", len(deduped))
+    logger.info("Total BWCA lakes (including disambiguated duplicates): %d", len(deduped))
+    if edge_cases:
+        logger.info("%d lakes were renamed with _2/_3 suffixes", len(edge_cases))
     return deduped, edge_df
 
 
