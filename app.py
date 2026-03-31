@@ -76,9 +76,14 @@ with st.sidebar:
         st.text(f"{icon}  {label}")
 
 
-# ── Helper: run a script and stream output ───────────────────────────────────
+# ── Session state for persisting run output ──────────────────────────────────
+
+if "last_run" not in st.session_state:
+    st.session_state.last_run = None   # {"step": str, "output": str, "ok": bool}
+
 
 def _run_script(script_name: str, extra_args: list[str] | None = None) -> None:
+    """Run a pipeline script, stream its output live, and persist the result."""
     cmd = [sys.executable, str(ROOT / "scripts" / script_name)]
     if extra_args:
         cmd.extend(extra_args)
@@ -95,10 +100,29 @@ def _run_script(script_name: str, extra_args: list[str] | None = None) -> None:
             container.code("".join(lines[-40:]), language="text")
         proc.wait()
 
-    if proc.returncode == 0:
-        st.success("Done")
+    ok = proc.returncode == 0
+    # Persist result so it survives the next render cycle
+    st.session_state.last_run = {
+        "step": script_name,
+        "output": "".join(lines),
+        "ok": ok,
+    }
+
+    if ok:
+        st.success("Done — pipeline step finished successfully.")
     else:
         st.error(f"Script exited with code {proc.returncode}")
+
+
+def _show_last_run() -> None:
+    """Render the stored output from the most recent run (if any)."""
+    run = st.session_state.get("last_run")
+    if not run:
+        return
+    label = f"Last run: {run['step']}"
+    icon = "✔" if run["ok"] else "✖"
+    with st.expander(f"{icon} {label}", expanded=not run["ok"]):
+        st.code(run["output"], language="text")
 
 
 # ── Tabs ─────────────────────────────────────────────────────────────────────
@@ -113,15 +137,18 @@ tab_data, tab_designs, tab_printful, tab_edge = st.tabs([
 with tab_data:
     st.header("GIS Data & BWCA Lakes")
 
-    col1, col2 = st.columns(2)
+    col1, col2, col3 = st.columns(3)
     with col1:
         if st.button("Run Step 1: Download GIS Data"):
             _run_script("01_download_gis_data.py")
-            st.rerun()
     with col2:
         if st.button("Run Step 2: Filter BWCA Lakes"):
             _run_script("02_filter_bwca_lakes.py")
+    with col3:
+        if st.button("Refresh Status"):
             st.rerun()
+
+    _show_last_run()
 
     # Show lake stats + map
     geojson_path = PROCESSED_DIR / "bwca_lakes.geojson"
@@ -186,7 +213,8 @@ with tab_designs:
     with dcol2:
         if st.button("Run Step 3: Generate All Designs"):
             _run_script("03_generate_designs.py")
-            st.rerun()
+
+    _show_last_run()
 
     png_files = sorted(PNG_DIR.glob("*.png")) if PNG_DIR.exists() else []
 
@@ -209,7 +237,6 @@ with tab_designs:
 
                 if st.button("Regenerate", key=f"regen_{i}"):
                     _run_script("03_generate_designs.py", ["--lake", lake_name])
-                    st.rerun()
     else:
         st.info("No designs generated yet. Run step 3.")
 
@@ -228,7 +255,8 @@ with tab_printful:
     with pcol2:
         if st.button("Push to Printful (live)"):
             _run_script("04_push_to_printful.py")
-            st.rerun()
+
+    _show_last_run()
 
     if progress_path.exists():
         df = pd.read_csv(progress_path)
