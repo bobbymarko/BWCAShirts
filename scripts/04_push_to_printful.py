@@ -9,6 +9,7 @@ The script is idempotent: re-running skips lakes whose status is "done".
 
 Options:
   --limit N       Process only the first N un-pushed designs.
+  --single        Process only the first un-pushed design (alias for --limit 1).
   --dry-run       Print what would happen without making API calls.
 """
 
@@ -50,6 +51,8 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Push designs to Printful")
     parser.add_argument("--limit", type=int, default=0,
                         help="Process only the first N un-pushed designs")
+    parser.add_argument("--single", action="store_true",
+                        help="Process only the first un-pushed design (alias for --limit 1)")
     parser.add_argument("--dry-run", action="store_true",
                         help="Preview without making API calls")
     args = parser.parse_args()
@@ -64,8 +67,9 @@ def main() -> None:
     done_names = set(progress.loc[progress["status"] == "done", "lake_name"])
     todo = [p for p in png_files if p.stem not in done_names]
 
-    if args.limit > 0:
-        todo = todo[: args.limit]
+    limit = 1 if args.single else args.limit
+    if limit > 0:
+        todo = todo[:limit]
 
     logger.info("%d designs to push (%d already done)", len(todo), len(done_names))
 
