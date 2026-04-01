@@ -258,13 +258,26 @@ with tab_printful:
 
     progress_path = OUTPUT_DIR / "printful_progress.csv"
 
-    pcol1, pcol2 = st.columns(2)
+    push_limit = st.number_input(
+        "Limit (0 = all)", min_value=0, value=1, step=1,
+        help="Set to 1 to test a single design, or 0 to push all remaining designs.",
+    )
+    pcol1, pcol2, pcol3 = st.columns(3)
     with pcol1:
         if st.button("Push to Printful (dry run)"):
-            _run_script("04_push_to_printful.py", ["--dry-run"])
+            extra = ["--dry-run"]
+            if push_limit > 0:
+                extra += ["--limit", str(push_limit)]
+            _run_script("04_push_to_printful.py", extra)
     with pcol2:
+        if st.button("Push Single Design"):
+            _run_script("04_push_to_printful.py", ["--single"])
+    with pcol3:
         if st.button("Push to Printful (live)"):
-            _run_script("04_push_to_printful.py")
+            extra = []
+            if push_limit > 0:
+                extra += ["--limit", str(push_limit)]
+            _run_script("04_push_to_printful.py", extra)
 
     _show_last_run()
 
