@@ -18,7 +18,7 @@ REVIEW_DIR = OUTPUT_DIR / "review"
 FONTS_DIR = ROOT_DIR / "fonts"
 
 # ── SVG Artboard (100 SVG-units per inch) ────────────────────────────────────
-ARTBOARD_W = 1200   # 12 inches
+ARTBOARD_W = 1500   # 15 inches
 ARTBOARD_H = 1800   # 18 inches
 MARGIN_X = 100      # 1 inch each side
 MARGIN_Y = 200      # 2 inches top/bottom

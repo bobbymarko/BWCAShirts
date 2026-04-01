@@ -208,11 +208,20 @@ with tab_data:
 with tab_designs:
     st.header("Shirt Designs")
 
-    dcol1, dcol2 = st.columns([3, 1])
+    # Grey background so white lake outlines are visible against the preview tile
+    st.markdown(
+        "<style>[data-testid='stImage'] img { background-color: #3c3c3c; }</style>",
+        unsafe_allow_html=True,
+    )
+
+    dcol1, dcol2, dcol3 = st.columns([3, 1, 1])
     with dcol1:
         search = st.text_input("Search by lake name", key="design_search")
     with dcol2:
-        if st.button("Run Step 3: Generate All Designs"):
+        if st.button("Generate Sample (5 lakes)"):
+            _run_script("03_generate_designs.py", ["--sample"])
+    with dcol3:
+        if st.button("Generate All Designs"):
             _run_script("03_generate_designs.py")
 
     _show_last_run()

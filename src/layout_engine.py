@@ -100,7 +100,9 @@ def compute_layout(
         max_fs = (artboard_w * 0.88) / (char_count * 0.52)
         name_fs = min(name_fs, max_fs)
 
-    bwca_fs = name_fs * 0.32
+    # BWCA is a small tag nestled under the right edge of the lake name —
+    # roughly 21% of the name size matches the inspo designs.
+    bwca_fs = name_fs * 0.21
 
     # ── Text vertical position ───────────────────────────────────────────
     lake_top  = offset_y
@@ -113,10 +115,9 @@ def compute_layout(
     else:
         text_anchor_y = lake_top + display_h * 0.38
 
-    # The anchor represents the vertical mid-point of the text block.
-    # Text block height = name_fs + descender gap + bwca_fs
-    descender = name_fs * 0.25
-    gap = name_fs * 0.12
+    # Tight gap between name and BWCA tag (script fonts have modest descenders).
+    descender = name_fs * 0.10
+    gap       = name_fs * 0.02
     block_h = name_fs + descender + gap + bwca_fs
     block_top = text_anchor_y - block_h / 2
 

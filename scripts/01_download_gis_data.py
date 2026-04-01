@@ -16,7 +16,6 @@ import zipfile
 from pathlib import Path
 from urllib.request import urlretrieve
 
-# Allow running as a script
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from src.config import (
@@ -34,7 +33,6 @@ logger = logging.getLogger(__name__)
 
 
 def download_file(url: str, dest: Path) -> Path:
-    """Download *url* to *dest*, skipping if the file already exists."""
     if dest.exists():
         logger.info("Already downloaded: %s", dest.name)
         return dest
@@ -46,8 +44,6 @@ def download_file(url: str, dest: Path) -> Path:
 
 
 def extract_zip(zip_path: Path, dest_dir: Path) -> None:
-    """Extract a zip archive into *dest_dir*, skipping if already extracted."""
-    # Simple heuristic: if the directory already has files, skip
     if any(dest_dir.rglob("*.shp")):
         logger.info("Already extracted: %s", dest_dir.name)
         return
@@ -60,12 +56,12 @@ def extract_zip(zip_path: Path, dest_dir: Path) -> None:
 def main() -> None:
     RAW_DIR.mkdir(parents=True, exist_ok=True)
 
-    # ── NHD waterbody data (MN statewide) ──────────────────────────────
+    # ── NHD waterbody data (MN statewide) ───────────────────────────────
     nhd_zip = RAW_DIR / "shp_water_national_hydrography_data.zip"
     download_file(NHD_URL, nhd_zip)
     extract_zip(nhd_zip, RAW_DIR / "mn_nhd")
 
-    # ── BWCA (Wilderness) boundary ───────────────────────────────────────
+    # ── BWCA wilderness boundary ─────────────────────────────────────────
     wild_zip = RAW_DIR / "S_USA.Wilderness.zip"
     download_file(WILDERNESS_URL, wild_zip)
     extract_zip(wild_zip, RAW_DIR / "S_USA.Wilderness")
